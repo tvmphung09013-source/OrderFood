@@ -1,26 +1,36 @@
 # Gemini AI Integration Guide
 
 ## Overview
-The chat feature now uses Google Gemini AI to provide intelligent responses about menu items, ingredients, preparation methods, and food stories.
+The chat feature uses Google Gemini AI with **Function Calling** to provide intelligent, context-aware responses. The AI can analyze natural language, maintain conversation history, and execute actions like adding items to cart, retrieving menu information, and answering questions about products.
 
-## Features
+## Key Features
 
-### AI-Powered Responses
-The chat assistant can now:
-- Answer questions about menu items (Pizza, Burger, Salad)
-- Provide information about ingredients
-- Explain preparation methods
-- Share stories and background about dishes
-- Give recommendations based on customer preferences
-- Answer pricing questions
+### AI-Powered Function Calling
+The system implements Gemini's function calling capability, allowing the AI to:
+- **Understand Intent**: Analyzes user messages to determine actions (order, query, browse)
+- **Extract Parameters**: Automatically parses item names, quantities, and other details
+- **Maintain Context**: Remembers conversation history for multi-turn interactions
+- **Handle Missing Data**: Asks clarifying questions when information is incomplete
+- **Execute Actions**: Calls appropriate functions and generates natural language responses
 
-### Fallback System
-If the Gemini API is not configured or fails, the system automatically falls back to intelligent keyword-based responses that cover:
-- Specific menu items (pizza, burger, salad)
-- Ingredients (nguyên liệu)
-- Preparation methods (chế biến, cooking)
-- Pricing information
-- Recommendations
+### Available Functions
+
+1. **addToCart**: Add products to shopping cart
+   - Triggers: "Tôi lấy", "Cho tôi", "Đặt", "Mua"
+   - Handles quantity expressions: "3 ly", "hai cái", "một phần"
+
+2. **getMenu**: Retrieve full menu with prices
+   - Triggers: "menu", "thực đơn", "có món gì"
+
+3. **getProductInfo**: Get detailed product information
+   - Triggers: "giá bao nhiêu", "có gì", "làm từ gì"
+
+### Conversation History
+The system maintains full conversation context:
+- User messages
+- AI responses
+- Function calls and results
+- Enables natural multi-turn conversations
 
 ## Setup Instructions
 
@@ -47,9 +57,7 @@ private static final String API_KEY = "YOUR_ACTUAL_API_KEY_HERE";
 
 ### 3. Build and Run
 
-The app will automatically use:
-- **Gemini API** if configured (provides AI-powered responses)
-- **Fallback responses** if API key is not set (provides keyword-based responses)
+The app uses the Gemini 1.5 Flash model which supports function calling.
 
 ## How It Works
 
@@ -58,145 +66,217 @@ The app will automatically use:
 ```
 User Message
     ↓
-ChatActivity.sendMessage()
+Add to Conversation History
     ↓
-Save to Database
+Send to Gemini API (with function declarations)
     ↓
-GeminiChatService.generateResponse()
+AI Analyzes Intent
     ↓
-Build Context (Menu + User Question)
-    ↓
-Call Gemini API
-    ↓
-Parse Response
-    ↓
-Save AI Response to Database
-    ↓
-Display in Chat UI
+    ├─→ Returns Function Call
+    │       ↓
+    │   Execute Function (addToCart/getMenu/getProductInfo)
+    │       ↓
+    │   Add Result to History
+    │       ↓
+    │   Call Gemini Again for Natural Response
+    │       ↓
+    └─→ Returns Text Response
+            ↓
+Display to User & Add to History
 ```
 
-### Context Building
+### Function Calling Process
 
-The service automatically includes menu context in every request:
-```
-Menu items available:
-- Pizza (Fast Food): A classic pizza... - Price: $10.99
-- Burger (Fast Food): A juicy beef patty... - Price: $5.99
-- Salad (Healthy): A mix of fresh greens... - Price: $7.99
+1. **Analysis Phase**: 
+   - Gemini receives user message with function declarations
+   - AI decides which function (if any) to call based on intent
+   - Extracts required parameters from natural language
 
-Customer question: [User's message]
-```
+2. **Execution Phase**:
+   - App receives function call from AI
+   - Executes the function with provided parameters
+   - Returns structured result to AI
 
-This ensures the AI has full knowledge of your menu when responding.
+3. **Response Generation Phase**:
+   - AI receives function result
+   - Generates natural language response
+   - App displays response to user
 
 ## Example Conversations
 
-### About Ingredients
-**Customer:** "What ingredients are in the pizza?"
-**AI:** "Our pizza is made with rich tomato sauce, mozzarella cheese, and pepperoni topping, all baked to perfection. The ingredients are fresh and high-quality!"
-
-### About Preparation
-**Customer:** "How do you prepare the burger?"
-**AI:** "Our burger is made with a juicy beef patty grilled to perfection, served with fresh lettuce, tomatoes, onions, and our special sauce in a toasted sesame seed bun."
-
-### Recommendations
-**Customer:** "What do you recommend for a healthy meal?"
-**AI:** "I recommend our Salad! It's made with fresh greens, cherry tomatoes, cucumbers, and bell peppers with a light vinaigrette dressing - perfect for a healthy meal at $7.99."
-
-## Customization
-
-### Modify AI Behavior
-
-Edit the prompt in `GeminiChatService.buildPrompt()`:
-
-```java
-private String buildPrompt(String userMessage, String menuContext) {
-    return "You are a [CUSTOMIZE ROLE]. " +
-           menuContext + "\n\n" +
-           "Customer question: " + userMessage + "\n\n" +
-           "[CUSTOMIZE INSTRUCTIONS]";
-}
+### Simple Order
+```
+User: "Cho tôi một pizza"
+AI: Calls addToCart("Pizza", 1)
+AI: "Tuyệt vời! Tôi đã thêm 1 Pizza vào giỏ hàng của bạn. Bạn có muốn gọi thêm gì không?"
 ```
 
-### Add More Fallback Responses
+### Context-Aware Order
+```
+User: "Pizza giá bao nhiêu?"
+AI: Calls getProductInfo("Pizza")
+AI: "Pizza có giá $10.99. Bạn có muốn đặt không?"
 
-Edit `GeminiChatService.generateFallbackResponse()` to add more keywords and responses:
-
-```java
-if (lowerPrompt.contains("your-keyword")) {
-    return "Your custom response here";
-}
+User: "Tôi lấy nó"
+AI: (Remembers "nó" = Pizza from context)
+AI: Calls addToCart("Pizza", 1)
+AI: "Đã thêm Pizza vào giỏ hàng của bạn!"
 ```
 
-### Adjust Response Delay
+### Missing Parameter Handling
+```
+User: "Tôi muốn burger"
+AI: "Bạn muốn bao nhiêu burger?"
 
-In `ChatActivity.sendMessage()`, change the delay:
+User: "3 cái"
+AI: Calls addToCart("Burger", 3)
+AI: "Đã thêm 3 Burger vào giỏ hàng..."
+```
 
-```java
-handler.postDelayed(() -> generateAIResponse(messageText), 1000); // milliseconds
+### Menu Browsing
+```
+User: "Có món gì?"
+AI: Calls getMenu()
+AI: "Chúng tôi có các món sau:
+     - Pizza ($10.99): A classic pizza...
+     - Burger ($5.99): A juicy beef patty...
+     - Salad ($7.99): Fresh greens...
+     Bạn muốn đặt món gì?"
 ```
 
 ## Technical Details
 
-### Dependencies Added
+### Model
+- **Name**: gemini-1.5-flash
+- **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`
+- **Features**: Function calling, conversation history, system instructions
 
-```gradle
-// Gemini API
-implementation 'com.google.ai.client.generativeai:generativeai:0.1.2'
-implementation 'com.google.guava:guava:31.1-android'
-implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+### Function Declarations
+Functions are defined with detailed Vietnamese descriptions to guide AI behavior:
+
+```java
+FunctionDeclaration addToCart = new FunctionDeclaration(
+    "addToCart",
+    "Thêm sản phẩm cụ thể và số lượng vào giỏ hàng. Chỉ sử dụng khi người dùng có ý định đặt mua hàng rõ ràng (ví dụ: 'Tôi lấy', 'Cho tôi', 'Thêm vào giỏ', 'Đặt', 'Mua'). Mô hình cần phân tích các từ như 'cái', 'suất', 'phần', 'ly' thành số lượng và chuyển tên gọi thông thường thành tên sản phẩm chính xác."
+);
 ```
 
-### Permissions Added
-
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
+### System Instruction
+```
+"Bạn là trợ lý nhà hàng thân thiện và hữu ích. Nhiệm vụ của bạn là giúp khách hàng đặt món ăn, trả lời câu hỏi về menu, và cung cấp thông tin chi tiết về các món ăn. Hãy luôn lịch sự, nhiệt tình và cung cấp thông tin chính xác."
 ```
 
-### New Files
+## Customization
 
-1. **GeminiChatService.java** - Service for AI integration
-   - API communication
-   - Context building
-   - Fallback logic
+### Add New Functions
 
-2. **Updated ChatActivity.java** - Enhanced with AI responses
-   - GeminiChatService integration
-   - Error handling
-   - Fallback mechanism
+1. Create function declaration in `initializeFunctions()`:
+```java
+FunctionDeclaration newFunction = new FunctionDeclaration(
+    "functionName",
+    "Detailed description in Vietnamese"
+);
+newFunction.addParameter(new FunctionDeclaration.Parameter(
+    "paramName",
+    "string",
+    "Parameter description",
+    true  // required
+));
+functionDeclarations.add(newFunction);
+```
+
+2. Implement execution logic in `executeFunction()`:
+```java
+case "functionName":
+    result = executeNewFunction(args);
+    break;
+```
+
+3. Create implementation method:
+```java
+private JSONObject executeNewFunction(JSONObject args) throws Exception {
+    // Implementation
+    JSONObject result = new JSONObject();
+    // ... process and return result
+    return result;
+}
+```
+
+### Modify AI Behavior
+
+Edit system instruction in `callGeminiAPIWithFunctions()`:
+```java
+systemPart.put("text", "Your custom system instruction...");
+```
+
+### Adjust Function Descriptions
+
+Function descriptions directly impact AI behavior. More detailed descriptions lead to better decision-making:
+- Include example trigger phrases
+- Explain parameter variations
+- Specify when to use the function
+- Use user's language (Vietnamese for Vietnamese users)
+
+## Advantages Over Rule-Based Approach
+
+| Feature | Old (Rule-Based) | New (Function Calling) |
+|---------|------------------|------------------------|
+| User Input | Exact keywords required | Natural language |
+| Context | No memory | Full conversation history |
+| Flexibility | Rigid patterns | Flexible understanding |
+| Maintenance | Complex if/else chains | Clean function declarations |
+| Quantity Parsing | Manual extraction | AI handles automatically |
+| Multi-language | Duplicate logic | Single description |
 
 ## Troubleshooting
 
 ### API Not Responding
 - Check internet connection
 - Verify API key is correct
-- Check Logcat for error messages
-- System will use fallback responses
+- Check Logcat for error messages: `adb logcat | grep GeminiChatService`
+- Ensure using gemini-1.5-flash or gemini-1.5-pro (function calling support)
 
 ### Rate Limits
-- Gemini API has free tier limits
-- Consider implementing request throttling
-- Use backend proxy for production
+- Gemini API has free tier limits (15 requests/minute, 1M tokens/minute)
+- Implement request throttling if needed
+- Consider upgrading to paid tier for production
 
 ### Network Errors
 - App handles errors gracefully
-- Falls back to keyword-based responses
 - User sees error toast
+- Check logs for detailed error information
 
-## Future Enhancements
+### Function Not Called
+- Check function description clarity
+- Verify parameter definitions
+- Review conversation history in logs
+- AI might ask for missing parameters first
 
-Potential improvements:
-- [ ] Streaming responses for real-time chat feel
-- [ ] Multi-language support
-- [ ] Image understanding for food photos
-- [ ] Order placement through chat
-- [ ] Conversation history analysis
-- [ ] Personalized recommendations
-- [ ] Voice input/output
+## Migration from Old System
+
+The old system used keyword matching:
+```java
+// OLD CODE (Removed)
+if (lowerUserMessage.startsWith("y ")) {
+    String itemName = lowerUserMessage.substring(2).trim();
+    // ... add to cart
+}
+```
+
+New system uses AI function calling:
+```java
+// NEW CODE
+// AI automatically decides to call addToCart() based on user intent
+// No keyword matching needed!
+```
+
+**Benefits of Migration**:
+- ~120 lines of if/else removed
+- Better user experience
+- Easier to maintain and extend
+- Supports natural language variations
 
 ## Security Best Practices
-
-For production deployment:
 
 1. **API Key Management**
    ```gradle
@@ -208,24 +288,49 @@ For production deployment:
        "\"${project.findProperty('GEMINI_API_KEY') ?: ''}\""
    ```
 
-2. **Backend Proxy**
+2. **Backend Proxy** (Recommended for production)
    - Move API calls to your server
    - Hide API keys from client app
    - Add authentication and rate limiting
+   - Monitor usage and costs
 
-3. **Content Filtering**
-   - Validate user input
-   - Filter inappropriate content
-   - Monitor API usage
+3. **Input Validation**
+   - Validate all function parameters
+   - Sanitize user inputs
+   - Implement proper error handling
+
+4. **Content Filtering**
+   - Monitor conversation content
+   - Filter inappropriate requests
+   - Log suspicious activity
+
+## Future Enhancements
+
+Potential improvements:
+- [ ] Add `removeFromCart` function
+- [ ] Add `viewCart` function
+- [ ] Add `checkout` function with order confirmation
+- [ ] Add `getRecommendations` based on preferences
+- [ ] Implement preference memory (dietary restrictions, favorites)
+- [ ] Add voice input/output
+- [ ] Support image understanding for food photos
+- [ ] Multi-language support (auto-detect user language)
+- [ ] Personalized recommendations based on history
+
+## Documentation
+
+- **Implementation Guide**: See [FUNCTION_CALLING_IMPLEMENTATION.md](FUNCTION_CALLING_IMPLEMENTATION.md) for detailed technical documentation
+- **Chat Feature**: See [CHAT_FEATURE.md](CHAT_FEATURE.md) for chat UI documentation
+- **Architecture**: See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for system architecture
 
 ## Support
 
 For issues or questions:
-- Check Logcat for detailed error messages
+- Check Logcat: `adb logcat | grep GeminiChatService`
 - Review [Gemini API Documentation](https://ai.google.dev/docs)
-- Test with fallback responses first
-- Ensure internet permission is granted
+- Check function calling examples: [Gemini Function Calling Guide](https://ai.google.dev/docs/function_calling)
+- Enable debug logging in GeminiChatService
 
 ---
 
-**Note:** The app works perfectly with or without Gemini API configured. The intelligent fallback system ensures users always get helpful responses about your menu!
+**Note**: This implementation provides a production-ready foundation for AI-powered ordering. The function calling approach is significantly more powerful and maintainable than keyword-based systems, while providing a natural conversational experience for users.
