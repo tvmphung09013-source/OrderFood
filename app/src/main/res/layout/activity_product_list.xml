@@ -30,6 +30,17 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_cart" />
 
+    <ImageButton
+        android:id="@+id/chatButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/cartButton"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_chat" />
+
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchView"
         android:layout_width="match_parent"

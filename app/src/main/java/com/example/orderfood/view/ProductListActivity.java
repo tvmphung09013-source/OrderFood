@@ -27,6 +27,7 @@ public class ProductListActivity extends AppCompatActivity {
     private List<Product> productList = new ArrayList<>();
     private SearchView searchView;
     private ImageButton cartButton;
+    private ImageButton chatButton;
     private AppDatabase appDatabase;
 
     @Override
@@ -40,6 +41,7 @@ public class ProductListActivity extends AppCompatActivity {
         loadProductsFromDatabase();
         setupSearchView();
         setupCartButton();
+        setupChatButton();
     }
 
     private void setupRecyclerView() {
@@ -93,6 +95,14 @@ public class ProductListActivity extends AppCompatActivity {
         cartButton = findViewById(R.id.cartButton);
         cartButton.setOnClickListener(v -> {
             Intent intent = new Intent(ProductListActivity.this, CartActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    private void setupChatButton() {
+        chatButton = findViewById(R.id.chatButton);
+        chatButton.setOnClickListener(v -> {
+            Intent intent = new Intent(ProductListActivity.this, ChatActivity.class);
             startActivity(intent);
         });
     }

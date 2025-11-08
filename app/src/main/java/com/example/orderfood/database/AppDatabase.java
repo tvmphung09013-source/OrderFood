@@ -7,18 +7,21 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
 import com.example.orderfood.dao.CartDao;
+import com.example.orderfood.dao.ChatDao;
 import com.example.orderfood.dao.ProductDao;
 import com.example.orderfood.dao.UserDao;
 import com.example.orderfood.model.CartItem;
+import com.example.orderfood.model.ChatMessage;
 import com.example.orderfood.model.Product;
 import com.example.orderfood.model.User;
 
-@Database(entities = {User.class, Product.class, CartItem.class}, version = 3, exportSchema = false)
+@Database(entities = {User.class, Product.class, CartItem.class, ChatMessage.class}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract UserDao userDao();
     public abstract ProductDao productDao();
     public abstract CartDao cartDao();
+    public abstract ChatDao chatDao();
 
     private static volatile AppDatabase INSTANCE;
 
