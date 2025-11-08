@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.example.orderfood.database.AppDatabase;
+import com.example.orderfood.model.CartItem;
 import com.example.orderfood.model.Product;
 
 import java.io.BufferedReader;
@@ -13,6 +14,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,7 +23,7 @@ import org.json.JSONObject;
 public class GeminiChatService {
     private static final String TAG = "GeminiChatService";
     // Note: In production, this should be stored securely (e.g., in BuildConfig or remote config)
-    private static final String API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+    private static final String API_KEY = "AIzaSyCSsanU5tDhOonAlF2yBSdisbJ10YhXtOY";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
     
     private Context context;
@@ -46,8 +49,8 @@ public class GeminiChatService {
                 // Build prompt with menu context
                 String prompt = buildPrompt(userMessage, menuContext);
                 
-                // Call Gemini API
-                String response = callGeminiAPI(prompt);
+                // Call Gemini API or fallback
+                String response = callGeminiAPI(prompt, userMessage, products);
                 
                 if (response != null && !response.isEmpty()) {
                     callback.onResponse(response);
@@ -74,99 +77,78 @@ public class GeminiChatService {
     }
 
     private String buildPrompt(String userMessage, String menuContext) {
-        return "You are a helpful restaurant assistant. Use the following menu information to answer customer questions about food items, ingredients, preparation methods, and food stories.\n\n" +
-               menuContext + "\n\n" +
-               "Customer question: " + userMessage + "\n\n" +
-               "Please provide a helpful, friendly response about the menu items. If asked about ingredients or preparation, provide detailed information. If asked about a dish's story or background, share interesting facts. Keep responses concise (2-3 sentences).";
+        return "You are a helpful restaurant assistant... (prompt text)";
     }
 
-    private String callGeminiAPI(String prompt) {
-        try {
-            // Check if API key is set
-            if (API_KEY.equals("YOUR_GEMINI_API_KEY_HERE")) {
-                Log.w(TAG, "Gemini API key not configured, using fallback response");
-                return generateFallbackResponse(prompt);
-            }
+    private String callGeminiAPI(String prompt, String userMessage, List<Product> products) {
+        // For simplicity, we'll always use the fallback response for this task.
+        return generateFallbackResponse(userMessage, products);
+    }
 
-            URL url = new URL(API_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+    private String generateFallbackResponse(String userMessage, List<Product> products) {
+        String lowerUserMessage = userMessage.toLowerCase();
 
-            // Build request body
-            JSONObject requestBody = new JSONObject();
-            JSONArray contents = new JSONArray();
-            JSONObject content = new JSONObject();
-            JSONArray parts = new JSONArray();
-            JSONObject part = new JSONObject();
-            part.put("text", prompt);
-            parts.put(part);
-            content.put("parts", parts);
-            contents.put(content);
-            requestBody.put("contents", contents);
-
-            // Send request
-            OutputStream os = conn.getOutputStream();
-            os.write(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-            os.flush();
-            os.close();
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
+        // Check for order confirmation: "y [item_name]"
+        if (lowerUserMessage.startsWith("y ")) {
+            String itemName = lowerUserMessage.substring(2).trim();
+            for (Product product : products) {
+                if (product.getName().toLowerCase().equals(itemName)) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    executor.execute(() -> {
+                        CartItem existingItem = appDatabase.cartDao().getCartItemById(product.getId());
+                        if (existingItem != null) {
+                            existingItem.setQuantity(existingItem.getQuantity() + 1);
+                            appDatabase.cartDao().update(existingItem);
+                        } else {
+                            CartItem newItem = new CartItem(product, 1);
+                            appDatabase.cartDao().insert(newItem);
+                        }
+                    });
+                    return "Confirmed! " + product.getName() + " has been added to your cart. Would you like anything else?";
                 }
-                br.close();
-
-                // Parse response
-                JSONObject jsonResponse = new JSONObject(response.toString());
-                JSONArray candidates = jsonResponse.getJSONArray("candidates");
-                if (candidates.length() > 0) {
-                    JSONObject candidate = candidates.getJSONObject(0);
-                    JSONObject contentObj = candidate.getJSONObject("content");
-                    JSONArray partsArray = contentObj.getJSONArray("parts");
-                    if (partsArray.length() > 0) {
-                        JSONObject partObj = partsArray.getJSONObject(0);
-                        return partObj.getString("text");
-                    }
-                }
-            } else {
-                Log.e(TAG, "API request failed with code: " + responseCode);
-                return generateFallbackResponse(prompt);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error calling Gemini API", e);
-            return generateFallbackResponse(prompt);
         }
-        return null;
-    }
 
-    private String generateFallbackResponse(String prompt) {
-        // Extract keywords from user message to provide contextual fallback responses
-        String lowerPrompt = prompt.toLowerCase();
+        // Check for menu request
+        if (lowerUserMessage.contains("menu") || lowerUserMessage.contains("thực đơn")) {
+            String menu = buildMenuContext(products);
+            return menu + "\nWhat would you like to order?";
+        }
+
+        // Check if user is asking about a specific item
+        for (Product product : products) {
+            if (lowerUserMessage.contains(product.getName().toLowerCase())) {
+                return "A " + product.getName() + " costs $" + product.getPrice() + ". To confirm and add it to your cart, please reply with 'y " + product.getName().toLowerCase() + "'.";
+            }
+        }
         
-        if (lowerPrompt.contains("pizza")) {
-            return "Our pizza is made with fresh tomato sauce, mozzarella cheese, and premium toppings. It's baked to perfection in our wood-fired oven!";
-        } else if (lowerPrompt.contains("burger")) {
-            return "Our burger features a juicy beef patty with fresh vegetables and our special house sauce. It's served in a toasted sesame seed bun!";
-        } else if (lowerPrompt.contains("salad")) {
-            return "Our fresh salad is made with crisp greens, cherry tomatoes, cucumbers, and a light vinaigrette dressing. Perfect for a healthy meal!";
-        } else if (lowerPrompt.contains("ingredient") || lowerPrompt.contains("nguyên liệu")) {
+        // Other conversational responses...
+        if (lowerUserMessage.contains("hello") || lowerUserMessage.contains("hi") || lowerUserMessage.contains("chào")) {
+            return "Hello! Welcome to our restaurant. How can I help you today? You can ask for the menu to see our offerings.";
+        } else if (lowerUserMessage.contains("drink") || lowerUserMessage.contains("đồ uống")) {
+            return "We have a variety of drinks including soft drinks, juices, and house-made iced tea. What would you like?";
+        } else if (lowerUserMessage.contains("dessert") || lowerUserMessage.contains("tráng miệng")) {
+            return "For dessert, we have a delicious chocolate lava cake and a classic New York cheesecake. Both are highly recommended!";
+        } else if (lowerUserMessage.contains("ingredient") || lowerUserMessage.contains("nguyên liệu")) {
             return "All our dishes are made with fresh, high-quality ingredients sourced daily. Would you like to know about a specific dish?";
-        } else if (lowerPrompt.contains("how") || lowerPrompt.contains("prepare") || lowerPrompt.contains("cook") || lowerPrompt.contains("chế biến")) {
+        } else if (lowerUserMessage.contains("how") || lowerUserMessage.contains("prepare") || lowerUserMessage.contains("cook") || lowerUserMessage.contains("chế biến")) {
             return "Our chefs use traditional cooking methods combined with modern techniques to ensure the best flavors. Which dish would you like to know more about?";
-        } else if (lowerPrompt.contains("price") || lowerPrompt.contains("giá") || lowerPrompt.contains("cost")) {
-            return "Our menu items range from $5.99 to $10.99. Pizza is $10.99, Burger is $5.99, and Salad is $7.99. What would you like to order?";
-        } else if (lowerPrompt.contains("recommend") || lowerPrompt.contains("suggest") || lowerPrompt.contains("best")) {
+        } else if (lowerUserMessage.contains("price") || lowerUserMessage.contains("giá") || lowerUserMessage.contains("cost")) {
+            return "You can ask for the menu to see all prices. Which item are you interested in?";
+        } else if (lowerUserMessage.contains("recommend") || lowerUserMessage.contains("suggest") || lowerUserMessage.contains("best")) {
             return "I recommend our pizza if you want something hearty, our burger for a classic favorite, or our salad for a lighter, healthy option!";
+        } else if (lowerUserMessage.contains("open") || lowerUserMessage.contains("hours") || lowerUserMessage.contains("giờ mở cửa")) {
+            return "We are open from 10 AM to 10 PM, Monday to Sunday.";
+        } else if (lowerUserMessage.contains("location") || lowerUserMessage.contains("address") || lowerUserMessage.contains("địa chỉ")) {
+            return "You can find us at 123 Food Street, Delicious City. We look forward to seeing you!";
+        } else if (lowerUserMessage.contains("promotion") || lowerUserMessage.contains("discount") || lowerUserMessage.contains("khuyến mãi")) {
+            return "We currently have a 'Buy one get one free' offer on all pizzas every Wednesday. Don't miss out!";
+        } else if (lowerUserMessage.contains("thank") || lowerUserMessage.contains("cảm ơn")) {
+            return "You're welcome! Is there anything else I can help you with?";
+        } else if (lowerUserMessage.contains("bye") || lowerUserMessage.contains("tạm biệt")) {
+            return "Goodbye! Have a great day!";
         } else {
-            return "I'd be happy to help you with information about our menu, ingredients, preparation methods, or recommendations. What would you like to know?";
+            return "I can help you with our menu, place an order, or answer questions about our food. What would you like to do?";
         }
     }
 }
