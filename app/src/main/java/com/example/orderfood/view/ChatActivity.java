@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.orderfood.R;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.ChatMessage;
+import com.example.orderfood.service.GeminiChatService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public class ChatActivity extends AppCompatActivity {
     private AppDatabase appDatabase;
     private ExecutorService executor;
     private Handler handler;
+    private GeminiChatService geminiChatService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +42,7 @@ public class ChatActivity extends AppCompatActivity {
         appDatabase = AppDatabase.getDatabase(getApplicationContext());
         executor = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
+        geminiChatService = new GeminiChatService(getApplicationContext());
 
         initViews();
         setupRecyclerView();
@@ -97,25 +100,43 @@ public class ChatActivity extends AppCompatActivity {
                 messageInput.setText("");
                 loadMessages();
                 
-                // Simulate a store response after 2 seconds
-                handler.postDelayed(() -> simulateStoreResponse(), 2000);
+                // Generate AI response after a short delay
+                handler.postDelayed(() -> generateAIResponse(messageText), 1000);
             });
         });
     }
 
-    private void simulateStoreResponse() {
-        String[] responses = {
-            "Thank you for your message! How can we help you?",
-            "We've received your message. Our team will respond shortly.",
-            "Hello! What would you like to order today?",
-            "Thank you for contacting us!",
-            "We're here to help. What do you need?"
-        };
-        
-        int randomIndex = (int) (Math.random() * responses.length);
-        String responseText = responses[randomIndex];
+    private void generateAIResponse(String userMessage) {
+        geminiChatService.generateResponse(userMessage, new GeminiChatService.ResponseCallback() {
+            @Override
+            public void onResponse(String response) {
+                long timestamp = System.currentTimeMillis();
+                ChatMessage storeMessage = new ChatMessage(response, timestamp, false, "AI Assistant");
+
+                executor.execute(() -> {
+                    appDatabase.chatDao().insert(storeMessage);
+                    
+                    handler.post(() -> {
+                        loadMessages();
+                    });
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                handler.post(() -> {
+                    Toast.makeText(ChatActivity.this, "Error generating response. Please try again.", Toast.LENGTH_SHORT).show();
+                    // Fallback to simple response
+                    generateFallbackResponse(userMessage);
+                });
+            }
+        });
+    }
+
+    private void generateFallbackResponse(String userMessage) {
+        String response = "Thank you for your message! I'd be happy to help you with information about our menu. What would you like to know?";
         long timestamp = System.currentTimeMillis();
-        ChatMessage storeMessage = new ChatMessage(responseText, timestamp, false, "Store");
+        ChatMessage storeMessage = new ChatMessage(response, timestamp, false, "Store");
 
         executor.execute(() -> {
             appDatabase.chatDao().insert(storeMessage);
