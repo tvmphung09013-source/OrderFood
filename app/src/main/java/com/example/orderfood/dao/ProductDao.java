@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import com.example.orderfood.model.Product;
 
@@ -21,6 +22,9 @@ public interface ProductDao {
     @Query("SELECT COUNT(*) FROM products")
     int getProductCount();
 
-	@Query("UPDATE products SET rating = :rating WHERE id = :productId")
-	void updateRating(int productId, float rating);
+    @Query("UPDATE products SET rating = :rating WHERE id = :productId")
+    void updateRating(int productId, float rating);
+
+    @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
+    Product getById(int productId);
 }
