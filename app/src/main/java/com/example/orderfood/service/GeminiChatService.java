@@ -1,22 +1,12 @@
 package com.example.orderfood.service;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
-import android.os.Build;
 import android.util.Log;
 
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
-import com.example.orderfood.R;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.CartItem;
 import com.example.orderfood.model.Product;
 import com.example.orderfood.util.StoreInfo;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -28,12 +18,15 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class GeminiChatService {
     private static final String TAG = "GeminiChatService";
     // Note: In production, this should be stored securely (e.g., in BuildConfig or remote config)
     private static final String API_KEY = "AIzaSyCSsanU5tDhOonAlF2yBSdisbJ10YhXtOY";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
-
+    
     private Context context;
     private AppDatabase appDatabase;
 
@@ -50,11 +43,16 @@ public class GeminiChatService {
     public void generateResponse(String userMessage, ResponseCallback callback) {
         new Thread(() -> {
             try {
+                // Get product information from database
                 List<Product> products = appDatabase.productDao().getAllProducts();
                 String menuContext = buildMenuContext(products);
+                
+                // Build prompt with menu context
                 String prompt = buildPrompt(userMessage, menuContext);
+                
+                // Call Gemini API or fallback
                 String response = callGeminiAPI(prompt, userMessage, products);
-
+                
                 if (response != null && !response.isEmpty()) {
                     callback.onResponse(response);
                 } else {
@@ -71,10 +69,10 @@ public class GeminiChatService {
         StringBuilder context = new StringBuilder("Menu items available:\n");
         for (Product product : products) {
             context.append("- ").append(product.getName())
-                    .append(" (").append(product.getCategory()).append("): ")
-                    .append(product.getDescription())
-                    .append(" - Price: $").append(product.getPrice())
-                    .append("\n");
+                   .append(" (").append(product.getCategory()).append("): ")
+                   .append(product.getDescription())
+                   .append(" - Price: $").append(product.getPrice())
+                   .append("\n");
         }
         return context.toString();
     }
@@ -84,12 +82,14 @@ public class GeminiChatService {
     }
 
     private String callGeminiAPI(String prompt, String userMessage, List<Product> products) {
+        // For simplicity, we'll always use the fallback response for this task.
         return generateFallbackResponse(userMessage, products);
     }
 
     private String generateFallbackResponse(String userMessage, List<Product> products) {
         String lowerUserMessage = userMessage.toLowerCase();
 
+        // Check for order confirmation: "y [item_name]"
         if (lowerUserMessage.startsWith("y ")) {
             String itemName = lowerUserMessage.substring(2).trim();
             for (Product product : products) {
@@ -104,23 +104,26 @@ public class GeminiChatService {
                             CartItem newItem = new CartItem(product, 1);
                             appDatabase.cartDao().insert(newItem);
                         }
-                        showAddToCartNotification(product);
                     });
                     return "Confirmed! " + product.getName() + " has been added to your cart. Would you like anything else?";
                 }
             }
         }
 
+        // Check for menu request
         if (lowerUserMessage.contains("menu") || lowerUserMessage.contains("thực đơn")) {
-            return buildMenuContext(products) + "\nWhat would you like to order?";
+            String menu = buildMenuContext(products);
+            return menu + "\nWhat would you like to order?";
         }
 
+        // Check if user is asking about a specific item
         for (Product product : products) {
             if (lowerUserMessage.contains(product.getName().toLowerCase())) {
                 return "A " + product.getName() + " costs $" + product.getPrice() + ". To confirm and add it to your cart, please reply with 'y " + product.getName().toLowerCase() + "'.";
             }
         }
-
+        
+        // Other conversational responses...
         if (lowerUserMessage.contains("hello") || lowerUserMessage.contains("hi") || lowerUserMessage.contains("chào")) {
             return "Hello! Welcome to our restaurant. How can I help you today? You can ask for the menu to see our offerings.";
         } else if (lowerUserMessage.contains("drink") || lowerUserMessage.contains("đồ uống")) {
@@ -138,7 +141,7 @@ public class GeminiChatService {
         } else if (lowerUserMessage.contains("open") || lowerUserMessage.contains("hours") || lowerUserMessage.contains("giờ mở cửa")) {
             return "We are open from 10 AM to 10 PM, Monday to Sunday.";
         } else if (lowerUserMessage.contains("location") || lowerUserMessage.contains("address") || lowerUserMessage.contains("địa chỉ")) {
-            String mapsUrl = "https://www.google.com/maps/search/?api=1&query="
+            String mapsUrl = "https://www.google.com/maps/search/?api=1&query=" 
                     + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG;
             return "You can find us at " + StoreInfo.STORE_ADDRESS + ". Map: " + mapsUrl;
         } else if (lowerUserMessage.contains("promotion") || lowerUserMessage.contains("discount") || lowerUserMessage.contains("khuyến mãi")) {
@@ -150,28 +153,5 @@ public class GeminiChatService {
         } else {
             return "I can help you with our menu, place an order, or answer questions about our food. What would you like to do?";
         }
-    }
-
-    private void showAddToCartNotification(Product product) {
-        String channelId = "CART_NOTIFICATION_CHANNEL";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Cart Notifications";
-            String description = "Shows notifications when an item is added to the cart.";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(channelId, name, importance);
-            channel.setDescription(description);
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
-                .setSmallIcon(R.drawable.ic_launcher_foreground) // Replace with your cart icon if available
-                .setContentTitle("Added to Cart")
-                .setContentText("1x " + product.getName() + " was added to your cart.")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        notificationManager.notify(product.getId(), builder.build());
     }
 }
