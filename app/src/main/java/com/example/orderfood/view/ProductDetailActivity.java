@@ -149,6 +149,11 @@ public class ProductDetailActivity extends AppCompatActivity {
         executor.execute(() -> {
             Review review = new Review(currentProduct.getId(), userId, rating, comment, System.currentTimeMillis());
             appDatabase.reviewDao().insert(review);
+            // Recalculate average and persist back to Product so main screen reflects updated rating
+            Float avg = appDatabase.reviewDao().getAverageRatingForProduct(currentProduct.getId());
+            if (avg != null) {
+                appDatabase.productDao().updateRating(currentProduct.getId(), avg);
+            }
             handler.post(() -> {
                 Toast.makeText(ProductDetailActivity.this, "Đã gửi đánh giá.", Toast.LENGTH_SHORT).show();
                 reviewRatingBar.setRating(0f);
