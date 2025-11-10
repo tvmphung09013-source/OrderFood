@@ -1,6 +1,8 @@
 package com.example.orderfood.view;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.orderfood.R;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.Product;
+import com.example.orderfood.util.StoreInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +31,11 @@ public class ProductListActivity extends AppCompatActivity {
     private SearchView searchView;
     private ImageButton cartButton;
     private ImageButton chatButton;
+
 	private ImageButton historyButton;
+
+    private ImageButton locationButton;
+
     private AppDatabase appDatabase;
 
     @Override
@@ -41,6 +48,7 @@ public class ProductListActivity extends AppCompatActivity {
         setupRecyclerView();
         loadProductsFromDatabase();
         setupSearchView();
+        setupLocationButton();
         setupCartButton();
         setupChatButton();
 		setupHistoryButton();
@@ -91,6 +99,36 @@ public class ProductListActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    private void setupLocationButton() {
+        locationButton = findViewById(R.id.locationButton);
+        locationButton.setOnClickListener(v -> {
+            openGoogleMaps();
+        });
+    }
+
+    private void openGoogleMaps() {
+        // Create a geo URI with the store location
+        String geoUriString = "geo:" + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG 
+                + "?q=" + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG 
+                + "(" + Uri.encode(StoreInfo.STORE_LABEL) + ")";
+        Uri geoUri = Uri.parse(geoUriString);
+        
+        // Create intent to open Google Maps
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, geoUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        
+        try {
+            // Try to open Google Maps app
+            startActivity(mapIntent);
+        } catch (ActivityNotFoundException e) {
+            // Fallback to web browser if Google Maps app is not installed
+            String webUrl = "https://www.google.com/maps/search/?api=1&query=" 
+                    + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG;
+            Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl));
+            startActivity(webIntent);
+        }
     }
 
     private void setupCartButton() {

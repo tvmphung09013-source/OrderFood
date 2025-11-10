@@ -20,6 +20,18 @@
         android:textStyle="bold" />
 
     <ImageButton
+        android:id="@+id/locationButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Store location"
+        android:src="@drawable/ic_location" />
+
+    <ImageButton
         android:id="@+id/cartButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
