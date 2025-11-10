@@ -27,6 +27,7 @@
         <activity android:name=".view.ProductDetailActivity" />
         <activity android:name=".view.CartActivity" />
         <activity android:name=".view.ChatActivity" />
+		<activity android:name=".view.OrderHistoryActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />

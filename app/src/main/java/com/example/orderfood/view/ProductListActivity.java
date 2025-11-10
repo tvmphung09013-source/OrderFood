@@ -31,7 +31,11 @@ public class ProductListActivity extends AppCompatActivity {
     private SearchView searchView;
     private ImageButton cartButton;
     private ImageButton chatButton;
+
+	private ImageButton historyButton;
+
     private ImageButton locationButton;
+
     private AppDatabase appDatabase;
 
     @Override
@@ -47,6 +51,7 @@ public class ProductListActivity extends AppCompatActivity {
         setupLocationButton();
         setupCartButton();
         setupChatButton();
+		setupHistoryButton();
     }
 
     private void setupRecyclerView() {
@@ -141,6 +146,14 @@ public class ProductListActivity extends AppCompatActivity {
             startActivity(intent);
         });
     }
+
+	private void setupHistoryButton() {
+		historyButton = findViewById(R.id.historyButton);
+		historyButton.setOnClickListener(v -> {
+			Intent intent = new Intent(ProductListActivity.this, OrderHistoryActivity.class);
+			startActivity(intent);
+		});
+	}
 
     private void filter(String text) {
         List<Product> filteredList = new ArrayList<>();

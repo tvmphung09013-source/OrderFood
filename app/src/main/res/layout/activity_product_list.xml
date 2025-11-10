@@ -47,11 +47,22 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_alignParentTop="true"
-        android:layout_toStartOf="@id/cartButton"
+		android:layout_toStartOf="@id/cartButton"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_chat" />
+
+	<ImageButton
+		android:id="@+id/historyButton"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_alignParentTop="true"
+		android:layout_toStartOf="@id/chatButton"
+		android:layout_marginTop="8dp"
+		android:layout_marginEnd="8dp"
+		android:background="?attr/selectableItemBackgroundBorderless"
+		android:src="@drawable/ic_history" />
 
     <androidx.appcompat.widget.SearchView
         android:id="@+id/searchView"
