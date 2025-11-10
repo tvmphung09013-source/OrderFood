@@ -4,7 +4,6 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
-import androidx.room.Ignore;
 
 @Entity(tableName = "users", indices = {@Index(value = {"username"}, unique = true), @Index(value = {"email"}, unique = true)})
 public class User {
@@ -23,10 +22,6 @@ public class User {
     @ColumnInfo(name = "full_name")
     private String fullName;
 
-	// Room requires a no-arg constructor for entities it needs to recreate
-	public User() {}
-
-	@Ignore
     public User(String username, String password, String email, String fullName) {
         this.username = username;
         this.password = password;

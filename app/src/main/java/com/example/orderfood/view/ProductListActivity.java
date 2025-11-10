@@ -1,13 +1,12 @@
 package com.example.orderfood.view;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.ImageButton;
 import androidx.appcompat.widget.SearchView;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.orderfood.R;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.Product;
-import com.example.orderfood.util.StoreInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +29,7 @@ public class ProductListActivity extends AppCompatActivity {
     private SearchView searchView;
     private ImageButton cartButton;
     private ImageButton chatButton;
-
-	private ImageButton historyButton;
-
-    private ImageButton locationButton;
-
+    private ImageButton historyButton;
     private AppDatabase appDatabase;
 
     @Override
@@ -48,10 +42,9 @@ public class ProductListActivity extends AppCompatActivity {
         setupRecyclerView();
         loadProductsFromDatabase();
         setupSearchView();
-        setupLocationButton();
         setupCartButton();
         setupChatButton();
-		setupHistoryButton();
+        setupHistoryButton();
     }
 
     private void setupRecyclerView() {
@@ -101,36 +94,6 @@ public class ProductListActivity extends AppCompatActivity {
         });
     }
 
-    private void setupLocationButton() {
-        locationButton = findViewById(R.id.locationButton);
-        locationButton.setOnClickListener(v -> {
-            openGoogleMaps();
-        });
-    }
-
-    private void openGoogleMaps() {
-        // Create a geo URI with the store location
-        String geoUriString = "geo:" + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG 
-                + "?q=" + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG 
-                + "(" + Uri.encode(StoreInfo.STORE_LABEL) + ")";
-        Uri geoUri = Uri.parse(geoUriString);
-        
-        // Create intent to open Google Maps
-        Intent mapIntent = new Intent(Intent.ACTION_VIEW, geoUri);
-        mapIntent.setPackage("com.google.android.apps.maps");
-        
-        try {
-            // Try to open Google Maps app
-            startActivity(mapIntent);
-        } catch (ActivityNotFoundException e) {
-            // Fallback to web browser if Google Maps app is not installed
-            String webUrl = "https://www.google.com/maps/search/?api=1&query=" 
-                    + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG;
-            Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(webUrl));
-            startActivity(webIntent);
-        }
-    }
-
     private void setupCartButton() {
         cartButton = findViewById(R.id.cartButton);
         cartButton.setOnClickListener(v -> {
@@ -141,19 +104,29 @@ public class ProductListActivity extends AppCompatActivity {
 
     private void setupChatButton() {
         chatButton = findViewById(R.id.chatButton);
-        chatButton.setOnClickListener(v -> {
-            Intent intent = new Intent(ProductListActivity.this, ChatActivity.class);
-            startActivity(intent);
-        });
+        if (chatButton != null) {
+            chatButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(ProductListActivity.this, ChatActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
     }
 
-	private void setupHistoryButton() {
-		historyButton = findViewById(R.id.historyButton);
-		historyButton.setOnClickListener(v -> {
-			Intent intent = new Intent(ProductListActivity.this, OrderHistoryActivity.class);
-			startActivity(intent);
-		});
-	}
+    private void setupHistoryButton() {
+        historyButton = findViewById(R.id.historyButton);
+        if (historyButton != null) {
+            historyButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(ProductListActivity.this, OrderHistoryActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
+    }
 
     private void filter(String text) {
         List<Product> filteredList = new ArrayList<>();

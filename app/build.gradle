@@ -34,11 +34,6 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
 
-    // Gemini API
-    implementation 'com.google.ai.client.generativeai:generativeai:0.1.2'
-    implementation 'com.google.guava:guava:31.1-android'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-
     implementation libs.appcompat
     implementation libs.material
     implementation libs.activity

@@ -20,7 +20,4 @@ public interface ProductDao {
 
     @Query("SELECT COUNT(*) FROM products")
     int getProductCount();
-
-	@Query("UPDATE products SET rating = :rating WHERE id = :productId")
-	void updateRating(int productId, float rating);
 }

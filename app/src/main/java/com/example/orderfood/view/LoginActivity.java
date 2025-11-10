@@ -71,8 +71,7 @@ public class LoginActivity extends AppCompatActivity {
             User user = appDatabase.userDao().login(username, password);
             handler.post(() -> {
                 if (user != null) {
-					getSharedPreferences("orderfood_prefs", MODE_PRIVATE).edit().putInt("current_user_id", user.getId()).apply();
-					showAlertDialog("Login Successful", "Welcome " + user.getFullName(), (dialog, which) -> {
+                    showAlertDialog("Login Successful", "Welcome " + user.getFullName(), (dialog, which) -> {
                         Intent intent = new Intent(LoginActivity.this, ProductListActivity.class);
                         startActivity(intent);
                         finish();

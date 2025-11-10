@@ -2,7 +2,6 @@ package com.example.orderfood.model;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-import androidx.room.Ignore;
 
 import java.io.Serializable;
 
@@ -20,7 +19,6 @@ public class Product implements Serializable {
     // Important: Room requires a no-argument constructor.
     public Product() {}
 
-	@Ignore
     public Product(int id, String name, String category, double price, float rating, String description, int imageId) {
         this.id = id;
         this.name = name;

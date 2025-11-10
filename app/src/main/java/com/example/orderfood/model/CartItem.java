@@ -3,7 +3,6 @@ package com.example.orderfood.model;
 import androidx.room.Embedded;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
-import androidx.room.Ignore;
 
 @Entity(tableName = "cart_items")
 public class CartItem {
@@ -16,10 +15,6 @@ public class CartItem {
 
     private int quantity;
 
-	// Room no-arg constructor
-	public CartItem() {}
-
-	@Ignore
     public CartItem(Product product, int quantity) {
         this.productId = product.getId();
         this.product = product;
