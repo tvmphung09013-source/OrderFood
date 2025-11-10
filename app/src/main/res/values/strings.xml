@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">OrderFood</string>
+    <string name="shipping_address">Shipping Address</string>
+    <string name="full_name">Full Name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="delivery_address">Delivery Address</string>
+    <string name="save_address">Save Address</string>
+    <string name="name_info">Name: </string>
+    <string name="phone_info">Phone: </string>
+    <string name="address_info">Address: </string>
+    <string name="edit_address">Edit Address</string>
+    <string name="order_items">Order Items</string>
+    <string name="fees">Fees</string>
+    <string name="product_fee">Product Fee</string>
+    <string name="shipping_fee">Shipping Fee</string>
+    <string name="fee_default">$0.00</string>
+    <string name="total">Total</string>
+    <string name="confirm_payment">Confirm Payment</string>
+</resources>
