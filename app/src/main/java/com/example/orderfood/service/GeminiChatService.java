@@ -6,6 +6,7 @@ import android.util.Log;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.CartItem;
 import com.example.orderfood.model.Product;
+import com.example.orderfood.util.StoreInfo;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -140,7 +141,9 @@ public class GeminiChatService {
         } else if (lowerUserMessage.contains("open") || lowerUserMessage.contains("hours") || lowerUserMessage.contains("giờ mở cửa")) {
             return "We are open from 10 AM to 10 PM, Monday to Sunday.";
         } else if (lowerUserMessage.contains("location") || lowerUserMessage.contains("address") || lowerUserMessage.contains("địa chỉ")) {
-            return "You can find us at 123 Food Street, Delicious City. We look forward to seeing you!";
+            String mapsUrl = "https://www.google.com/maps/search/?api=1&query=" 
+                    + StoreInfo.STORE_LAT + "," + StoreInfo.STORE_LNG;
+            return "You can find us at " + StoreInfo.STORE_ADDRESS + ". Map: " + mapsUrl;
         } else if (lowerUserMessage.contains("promotion") || lowerUserMessage.contains("discount") || lowerUserMessage.contains("khuyến mãi")) {
             return "We currently have a 'Buy one get one free' offer on all pizzas every Wednesday. Don't miss out!";
         } else if (lowerUserMessage.contains("thank") || lowerUserMessage.contains("cảm ơn")) {
