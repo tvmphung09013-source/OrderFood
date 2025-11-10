@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.orderfood.R;
 import com.example.orderfood.database.AppDatabase;
 import com.example.orderfood.model.CartItem;
+import com.example.orderfood.model.Order;
+import com.example.orderfood.model.OrderItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
     private AppDatabase appDatabase;
     private TextView totalPriceTextView;
     private ImageButton backButton;
+    private Button checkoutButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +42,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
         totalPriceTextView = findViewById(R.id.totalPriceTextView);
         recyclerView = findViewById(R.id.cartRecyclerView);
         backButton = findViewById(R.id.cartBackButton);
+        checkoutButton = findViewById(R.id.checkoutButton);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -47,6 +52,7 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
         loadCartItems();
 
         backButton.setOnClickListener(v -> finish());
+        checkoutButton.setOnClickListener(v -> checkout());
     }
 
     private void loadCartItems() {
@@ -91,6 +97,53 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
         executor.execute(() -> {
             appDatabase.cartDao().deleteById(productId);
             loadCartItems(); // Reload to reflect changes
+        });
+    }
+
+    private void checkout() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            List<CartItem> items = appDatabase.cartDao().getAllCartItems();
+            if (items == null || items.isEmpty()) {
+                handler.post(() -> {
+                    android.widget.Toast.makeText(CartActivity.this, "Cart is empty", android.widget.Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            int userId = getSharedPreferences("orderfood_prefs", MODE_PRIVATE).getInt("current_user_id", -1);
+            if (userId == -1) {
+                handler.post(() -> {
+                    android.widget.Toast.makeText(CartActivity.this, "Please login first", android.widget.Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            double total = 0;
+            for (CartItem item : items) {
+                total += item.getProduct().getPrice() * item.getQuantity();
+            }
+
+            Order order = new Order(userId, total, System.currentTimeMillis());
+            long orderIdLong = appDatabase.orderDao().insert(order);
+            int orderId = (int) orderIdLong;
+
+            List<OrderItem> orderItems = new java.util.ArrayList<>();
+            for (CartItem ci : items) {
+                orderItems.add(new OrderItem(orderId, ci.getProductId(), ci.getQuantity(), ci.getProduct().getPrice()));
+            }
+            appDatabase.orderDao().insertItems(orderItems);
+
+            appDatabase.cartDao().deleteAll();
+
+            handler.post(() -> {
+                cartItemList.clear();
+                adapter.notifyDataSetChanged();
+                calculateTotalPrice();
+                android.widget.Toast.makeText(CartActivity.this, "Order placed successfully", android.widget.Toast.LENGTH_SHORT).show();
+            });
         });
     }
 }
