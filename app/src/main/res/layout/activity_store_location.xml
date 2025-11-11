@@ -31,8 +31,8 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
-    <WebView
-        android:id="@+id/mapWebView"
+    <com.google.android.gms.maps.MapView
+        android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/storeTitleTextView"
