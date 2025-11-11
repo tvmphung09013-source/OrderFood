@@ -146,6 +146,8 @@ public class GeminiChatService {
             return "You can find us at " + StoreInfo.STORE_ADDRESS + ". Map: " + mapsUrl;
         } else if (lowerUserMessage.contains("promotion") || lowerUserMessage.contains("discount") || lowerUserMessage.contains("khuyến mãi")) {
             return "We currently have a 'Buy one get one free' offer on all pizzas every Wednesday. Don't miss out!";
+        } else if (lowerUserMessage.contains("contact") || lowerUserMessage.contains("liên hệ") || lowerUserMessage.contains("phone") || lowerUserMessage.contains("email") || lowerUserMessage.contains("0338912145") || lowerUserMessage.contains("thachthoi26@gmail.com")) {
+            return "Bạn có thể liên hệ với chúng tôi qua số điện thoại 0338912145 hoặc email: thachthoi26@gmail.com để được hỗ trợ nhé.";
         } else if (lowerUserMessage.contains("thank") || lowerUserMessage.contains("cảm ơn")) {
             return "You're welcome! Is there anything else I can help you with?";
         } else if (lowerUserMessage.contains("bye") || lowerUserMessage.contains("tạm biệt")) {
