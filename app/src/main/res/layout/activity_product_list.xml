@@ -19,6 +19,18 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
+    <ImageView
+        android:id="@+id/productBanner"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_below="@id/titleTextView"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/product_banner"
+        android:contentDescription="Product Banner" />
+
     <ImageButton
         android:id="@+id/locationButton"
         android:layout_width="48dp"
@@ -77,7 +89,7 @@
         android:id="@+id/searchView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/titleTextView"
+        android:layout_below="@id/productBanner"
         android:layout_margin="8dp"
         android:background="@drawable/edit_text_background"
         app:queryHint="Search for food..." />
