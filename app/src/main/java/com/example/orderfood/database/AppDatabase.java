@@ -21,7 +21,7 @@ import com.example.orderfood.model.Product;
 import com.example.orderfood.model.Review;
 import com.example.orderfood.model.User;
 
-@Database(entities = {User.class, Product.class, CartItem.class, ChatMessage.class, Order.class, OrderItem.class, Review.class}, version = 5, exportSchema = false)
+@Database(entities = {User.class, Product.class, CartItem.class, ChatMessage.class, Order.class, OrderItem.class, Review.class}, version = 7, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     public abstract UserDao userDao();
