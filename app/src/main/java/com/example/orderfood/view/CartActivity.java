@@ -119,8 +119,10 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
 			}
 
 			double total = 0;
+			int itemCount = 0;
 			for (CartItem item : items) {
 				total += item.getProduct().getPrice() * item.getQuantity();
+				itemCount += item.getQuantity();
 			}
 
 			com.example.orderfood.model.Order order = new com.example.orderfood.model.Order(userId, total, System.currentTimeMillis());
@@ -135,11 +137,23 @@ public class CartActivity extends AppCompatActivity implements CartAdapter.CartL
 
 			appDatabase.cartDao().deleteAll();
 
+			final double finalTotal = total;
+			final int finalItemCount = itemCount;
+
 			handler.post(() -> {
+				// Navigate to Billing Activity
+				android.content.Intent intent = new android.content.Intent(CartActivity.this, BillingActivity.class);
+				intent.putExtra("total_amount", finalTotal);
+				intent.putExtra("item_count", finalItemCount);
+				startActivity(intent);
+				
+				// Clear the cart UI
 				cartItemList.clear();
 				adapter.notifyDataSetChanged();
 				calculateTotalPrice();
-				android.widget.Toast.makeText(CartActivity.this, "Order placed successfully", android.widget.Toast.LENGTH_SHORT).show();
+				
+				// Finish this activity so user can't go back to empty cart
+				finish();
 			});
 		});
 	}
