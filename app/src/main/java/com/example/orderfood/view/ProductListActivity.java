@@ -30,6 +30,7 @@ public class ProductListActivity extends AppCompatActivity {
     private ImageButton cartButton;
     private ImageButton chatButton;
     private ImageButton historyButton;
+    private ImageButton locationButton;
     private AppDatabase appDatabase;
 
     @Override
@@ -45,6 +46,8 @@ public class ProductListActivity extends AppCompatActivity {
         setupCartButton();
         setupChatButton();
         setupHistoryButton();
+        setupLocationButton();
+        checkCartNotification();
     }
 
     private void setupRecyclerView() {
@@ -140,6 +143,47 @@ public class ProductListActivity extends AppCompatActivity {
             }
         }
         adapter.filterList(filteredList);
+    }
+
+    private void setupLocationButton() {
+        locationButton = findViewById(R.id.locationButton);
+        if (locationButton != null) {
+            locationButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(ProductListActivity.this, StoreLocationActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
+    }
+
+    private void checkCartNotification() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(() -> {
+            List<com.example.orderfood.model.CartItem> cartItems = appDatabase.cartDao().getAllCartItems();
+            handler.post(() -> {
+                if (cartItems != null && !cartItems.isEmpty()) {
+                    int itemCount = 0;
+                    for (com.example.orderfood.model.CartItem item : cartItems) {
+                        itemCount += item.getQuantity();
+                    }
+                    final int totalItems = itemCount;
+                    
+                    new android.app.AlertDialog.Builder(ProductListActivity.this)
+                        .setTitle("Cart Notification")
+                        .setMessage("You have " + totalItems + " item(s) in your cart.")
+                        .setPositiveButton("View Cart", (dialog, which) -> {
+                            Intent intent = new Intent(ProductListActivity.this, CartActivity.class);
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("Continue Shopping", null)
+                        .show();
+                }
+            });
+        });
     }
 
     @Override
